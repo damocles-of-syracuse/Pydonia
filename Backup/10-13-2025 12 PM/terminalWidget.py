@@ -1,0 +1,102 @@
+import os
+import sys
+from PyQt6 import QtWidgets, QtCore, QtGui
+from PyQt6.QtCore import QProcess
+
+class TerminalWidget(QtWidgets.QWidget):
+    """
+    Simple terminal-like widget backed by QProcess.
+    Limitations: this is NOT a full pty terminal. Programs that require a real PTY (vim/top/ssh)
+    won't behave correctly.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.proc = QProcess(self)
+
+        # Output (read-only)
+        self.output = QtWidgets.QPlainTextEdit()
+        self.output.setReadOnly(True)
+        self.output.setWordWrapMode(QtGui.QTextOption.WrapMode.NoWrap)
+
+        # Input line
+        self.input = QtWidgets.QLineEdit()
+        self.input.setPlaceholderText("Type a line and press Enter to send to process")
+        self.input.returnPressed.connect(self._send_input)
+
+        # Layout
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.output)
+        layout.addWidget(self.input)
+
+        # Connect process signals
+        self.proc.readyReadStandardOutput.connect(self._read_stdout)
+        self.proc.readyReadStandardError.connect(self._read_stderr)
+        self.proc.started.connect(lambda: self._append_text("[process started]\n"))
+        self.proc.finished.connect(self._on_finished)
+
+    def start_shell(self, cwd: str | None = None):
+        """Start a platform shell (cmd/powershell on Windows; user's $SHELL on POSIX)."""
+        if sys.platform.startswith("win"):
+            # Prefer powershell if available; otherwise fall back to cmd.exe
+            powershell = os.path.join(os.environ.get("SYSTEMROOT", r"C:\Windows"), "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
+            if os.path.exists(powershell):
+                program = powershell
+                args = ['-NoLogo']  # interactive
+            else:
+                program = "cmd.exe"
+                args = []
+        else:
+            program = os.environ.get("SHELL", "/bin/bash")
+            args = ['-i']  # interactive shell
+
+        if cwd:
+            self.proc.setWorkingDirectory(cwd)
+        self.proc.start(program, args)
+
+    def start_python_with_file(self, file_path: str):
+        """Start 'python -i -u file.py' so the script runs then you get an interactive REPL."""
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(file_path)
+        program = sys.executable
+        args = ['-i', '-u', file_path]
+        self.proc.start(program, args)
+
+    def _read_stdout(self):
+        data = bytes(self.proc.readAllStandardOutput()).decode('utf-8', errors='replace')
+        self._append_text(data)
+
+    def _read_stderr(self):
+        data = bytes(self.proc.readAllStandardError()).decode('utf-8', errors='replace')
+        # mark stderr so user can notice
+        self._append_text("[stderr] " + data)
+
+    def _append_text(self, txt: str):
+        # Append without changing user's selection and keep autoscroll
+        self.output.moveCursor(QtGui.QTextCursor.MoveOperation.End)
+        self.output.insertPlainText(txt)
+        self.output.moveCursor(QtGui.QTextCursor.MoveOperation.End)
+
+    def _send_input(self):
+        """Send the line to the process's stdin (adds newline)."""
+        line = self.input.text()
+        if not line.endswith("\n"):
+            line = line + "\n"
+        if self.proc.state() == QProcess.ProcessState.Running:
+            self.proc.write(line.encode('utf-8'))
+            self.proc.waitForBytesWritten(100)
+        else:
+            self._append_text("[process not running]\n")
+        # echo
+        self._append_text(">>> " + line)
+        self.input.clear()
+
+    def _on_finished(self, exitCode: int, exitStatus: QProcess.ExitStatus):
+        self._append_text(f"\n[process finished: code={exitCode} status={exitStatus}]\n")
+
+    def terminate(self):
+        """Try to terminate the process cleanly, then kill if needed."""
+        if self.proc.state() == QProcess.ProcessState.Running:
+            self.proc.terminate()
+            if not self.proc.waitForFinished(500):
+                self.proc.kill()

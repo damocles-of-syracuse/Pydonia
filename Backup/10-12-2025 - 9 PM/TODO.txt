@@ -1,0 +1,64 @@
+TODO:
+Cell logic - Run individual cells, Delete cells, run new cell on shift enter
+run individual cells with shift enter - run list of cells - Run the preamble on open
+
+keywords to python
+
+trivial symbols: ^ _
+
+keywords: Integrate, D
+
+parse - initial pass to resolve trivial symbols - Id python code - convert math to python
+parse lines - identify python code
+
+
+
+Cell logic - Have buttons in the top right corner
+Move between cells with the arrow keys
+fix the sad looking symbol menu
+If user types #--- just turn into #--- #usr comment or #--- -u or something and remove the #usr comment on open
+Project mamnagement: config file, make a venv, open/create project
+file menu bs: Delete, drag and drop, copy paste, control to select multiple items
+Adjustable font size, save to file so it persists
+adjust the color of cells when light theme is on
+can not delete while running.
+stop all workers and stop running.
+
+
+
+
+Complete:
+save py files - for now
+create new py or txt files in the file menu. and new dir
+Interact with terminal
+Do you want to save before closing? for tab and window
+Sympy handling: Imports, symbol definition hidden from usr - for now still need to make new symbols dynamically
+Run files - put output in the label
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

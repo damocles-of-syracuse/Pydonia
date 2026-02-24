@@ -1,0 +1,39 @@
+dijipd
+Hi
+I
+am Joe
+this is a test
+
+I can write here now!!!! but can I still? so it seems. And now even the tab title works.
+
+this is some text \n\n\n\n\n\n\n\nnn\\n\n\\
+
+jjester 
+
+carcosa\\
+
+-- -- -- -- \
+
+# ------------------- Pydonia will recognize this comment as the end of a block -------------------
+Jupiter just has #%%
+
+#---
+
+code
+fefe
+
+7878236277473732791928828236swswswsw232w222w223ed394y234434355344544123342432
+
+import ast
+
+def classify_text(text):
+    try:
+        tree = ast.parse(text)
+        # If the AST body contains a single expression node, treat as math
+        if len(tree.body) == 1 and isinstance(tree.body[0], ast.Expr):
+            return "math"
+        else:
+            return "python"
+    except SyntaxError:
+        return "math"
+
